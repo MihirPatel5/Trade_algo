@@ -1,0 +1,34 @@
+Best Model Found: LightGBM
+Best CV Accuracy: 1.0000
+
+--- Best Parameters ---
+model: LightGBM
+n_estimators: 50
+max_depth: 14
+learning_rate: 0.197537
+num_leaves: 73
+subsample: 0.561640
+colsample_bytree: 0.618914
+reg_alpha: 0.916939
+reg_lambda: 0.026137
+class_weight: None
+
+--- Features Used ---
+Open
+High
+Low
+Volume
+rsi
+macd
+macd_signal
+bollinger_h
+bollinger_l
+atr
+sma_50
+sma_200
+close_lag_1
+close_lag_2
+close_lag_3
+close_lag_4
+close_lag_5
+Target
