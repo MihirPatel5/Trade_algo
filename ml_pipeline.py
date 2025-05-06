@@ -11,24 +11,20 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-import logging # Import logging
+import logging
 
-# --- Configuration ---
 PROCESSED_DATA_PATH = 'forex_preprocessed/finalfeature.csv'
 MODEL_OUTPUT_PATH = 'forex_models'
 FUTURE_PERIOD = 1 
 N_SPLITS_CV = 5
 N_TRIALS_OPTUNA = 30
 
-# --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# --- Ensure Output Directory Exists ---
 os.makedirs(MODEL_OUTPUT_PATH, exist_ok=True)
 logger.info(f"Model output directory: {MODEL_OUTPUT_PATH}")
 
-# --- Load Data ---
 logger.info(f"Loading data from: {PROCESSED_DATA_PATH}")
 if not os.path.exists(PROCESSED_DATA_PATH):
     logger.error(f"Data file not found: {PROCESSED_DATA_PATH}")
@@ -73,46 +69,38 @@ logger.info(f"Using price column: {price_col}")
 data['target'] = (data[price_col].shift(-FUTURE_PERIOD) > data[price_col]).astype(int)
 logger.info(f"Target distribution:\n{data['target'].value_counts(normalize=True)}")
 
-# --- Data Preprocessing ---
-# Handle missing values created by shift or already present
 initial_rows = len(data)
-data.dropna(subset=['target'], inplace=True) # Drop rows where target is NaN
+data.dropna(subset=['target'], inplace=True)
 rows_after_target_dropna = len(data)
 logger.info(f"Dropped {initial_rows - rows_after_target_dropna} rows with NaN target.")
 
-# Define features (X) and target (y)
 exclude_columns = [date_col] if date_col else []
-exclude_columns.extend(['target', price_col]) # Exclude target and original price
-# Also exclude common date/time columns that might not be features
+exclude_columns.extend(['target', price_col])
 exclude_columns.extend([col for col in data.columns if col.lower() in ['datetime', 'date', 'time']])
-exclude_columns = list(set(col for col in exclude_columns if col in data.columns)) # Unique and existing columns
+exclude_columns = list(set(col for col in exclude_columns if col in data.columns))
 
 features = [col for col in data.columns if col not in exclude_columns]
 target = 'target'
 
 logger.info(f"Selected {len(features)} features: {features}")
 
-X = data[features].copy() # Use .copy() to avoid SettingWithCopyWarning
+X = data[features].copy()
 y = data[target].copy()
 
-# Check and handle NaNs in features *after* selecting X
 if X.isnull().values.any():
     nan_counts = X.isnull().sum()
     logger.warning(f"Features contain NaN values:\n{nan_counts[nan_counts > 0]}")
-    # Consider more sophisticated imputation if needed (e.g., mean, median, forward fill)
-    X = X.fillna(0) # Simple fill with 0 for now
+    X = X.fillna(0)
     logger.info("Filled NaN values in features with 0.")
 else:
      logger.info("No NaN values found in selected features.")
 
 
-# --- Model Training and Hyperparameter Optimization ---
-
 # Optuna objective function
 def objective(trial):
     model_name = trial.suggest_categorical('model', ['RandomForest', 'XGBoost', 'LightGBM', 'LogisticRegression'])
 
-    model = None # Initialize model to None
+    model = None
 
     try:
         if model_name == "RandomForest":
@@ -133,52 +121,42 @@ def objective(trial):
                 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
                 'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
                 'gamma': trial.suggest_float('gamma', 0, 0.5),
-                'reg_alpha': trial.suggest_float('reg_alpha', 0, 1), # L1 regularization
-                'reg_lambda': trial.suggest_float('reg_lambda', 0, 1), # L2 regularization
+                'reg_alpha': trial.suggest_float('reg_alpha', 0, 1),
+                'reg_lambda': trial.suggest_float('reg_lambda', 0, 1),
             }
             model = xgb.XGBClassifier(**params, random_state=42, n_jobs=-1, use_label_encoder=False, eval_metric='logloss')
 
         elif model_name == "LightGBM":
             params = {
                 'n_estimators': trial.suggest_int('n_estimators', 50, 300, step=10),
-                'max_depth': trial.suggest_int('max_depth', 3, 15), # -1 means no limit, maybe restrict
+                'max_depth': trial.suggest_int('max_depth', 3, 15),
                 'learning_rate': trial.suggest_float('learning_rate', 0.005, 0.3, log=True),
                 'num_leaves': trial.suggest_int('num_leaves', 10, 150),
-                'subsample': trial.suggest_float('subsample', 0.5, 1.0), # Also called bagging_fraction
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0), # Also called feature_fraction
-                'reg_alpha': trial.suggest_float('reg_alpha', 0, 1), # L1 regularization
-                'reg_lambda': trial.suggest_float('reg_lambda', 0, 1), # L2 regularization
+                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+                'reg_alpha': trial.suggest_float('reg_alpha', 0, 1),
+                'reg_lambda': trial.suggest_float('reg_lambda', 0, 1),
                 'class_weight': trial.suggest_categorical('class_weight', ['balanced', None])
             }
             model = lgb.LGBMClassifier(**params, random_state=42, n_jobs=-1)
 
-        else:  # LogisticRegression
-            params = {} # Start empty
+        else:
+            params = {}
             penalty = trial.suggest_categorical('penalty', ['l1', 'l2', 'elasticnet', None])
             params['penalty'] = penalty
-            params['C'] = trial.suggest_float('C', 0.001, 100.0, log=True) # Wider range for C
+            params['C'] = trial.suggest_float('C', 0.001, 100.0, log=True)
             params['class_weight'] = trial.suggest_categorical('class_weight', ['balanced', None])
 
-            # *** Crucial Fix: Set solver and l1_ratio based on penalty ***
             if penalty == 'elasticnet':
-                params['solver'] = 'saga' # MUST be saga
+                params['solver'] = 'saga'
                 params['l1_ratio'] = trial.suggest_float('l1_ratio', 0.0, 1.0)
             elif penalty == 'l1':
-                params['solver'] = 'saga' # saga and liblinear support l1
-                # params['solver'] = trial.suggest_categorical('solver_l1', ['saga', 'liblinear'])
+                params['solver'] = 'saga'
             elif penalty == 'l2':
-                 # All solvers except liblinear (if C is high) support l2 technically,
-                 # but saga is robust. Let's default to saga.
                  params['solver'] = 'saga'
-                 # params['solver'] = trial.suggest_categorical('solver_l2', ['lbfgs', 'newton-cg', 'sag', 'saga', 'liblinear'])
-            else: # penalty is None
-                # 'lbfgs', 'newton-cg', 'sag', 'saga' support None penalty
-                params['solver'] = 'saga' # Defaulting to saga
-                # params['solver'] = trial.suggest_categorical('solver_none', ['lbfgs', 'newton-cg', 'sag', 'saga'])
-
-            model = LogisticRegression(**params, random_state=42, max_iter=1500, n_jobs=-1) # Increased max_iter
-
-        # Performance metrics using TimeSeriesSplit
+            else:
+                params['solver'] = 'saga'
+            model = LogisticRegression(**params, random_state=42, max_iter=1500, n_jobs=-1)
         accuracies = []
         ts_split = TimeSeriesSplit(n_splits=N_SPLITS_CV)
 
@@ -190,24 +168,20 @@ def objective(trial):
                  logger.warning(f"Skipping fold due to empty train data in trial {trial.number}")
                  continue
 
-            model.fit(X_train, y_train) # Error should not happen here now
+            model.fit(X_train, y_train)
             preds = model.predict(X_val)
             acc = accuracy_score(y_val, preds)
             accuracies.append(acc)
-
-        # Handle cases where no folds completed successfully
         if not accuracies:
             logger.warning(f"Trial {trial.number} resulted in no valid accuracy scores.")
-            return 0.0 # Return low score for Optuna to prune
+            return 0.0
 
         mean_accuracy = np.mean(accuracies)
-        # logger.info(f"Trial {trial.number} ({model_name}) - Mean CV Accuracy: {mean_accuracy:.4f} - Params: {trial.params}")
         return mean_accuracy
 
     except Exception as e:
-        # Catch any unexpected error during model setup or fitting within a trial
         logger.error(f"Error in Trial {trial.number} ({model_name}) with params {trial.params}: {e}", exc_info=False) # Log error without full traceback noise
-        return 0.0 # Return a low score for failed trials
+        return 0.0
 
 
 # --- Run Optuna Study ---
@@ -215,19 +189,16 @@ logger.info(f"🔍 Starting hyperparameter optimization with Optuna ({N_TRIALS_O
 study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner())
 
 try:
-    # Use lambda to pass X and y if needed, although they are global here
-    study.optimize(objective, n_trials=N_TRIALS_OPTUNA, timeout=600) # Added timeout (10 minutes)
+    study.optimize(objective, n_trials=N_TRIALS_OPTUNA, timeout=600)
 except Exception as e:
-    logger.error(f"Optimization study failed: {e}", exc_info=True) # Log full traceback if study itself fails
+    logger.error(f"Optimization study failed: {e}", exc_info=True)
     raise
 
-# Check if study completed successfully and has trials
 if not study.trials:
      logger.error("Optuna study finished without any successful trials.")
      raise RuntimeError("Optuna study failed to complete any trials.")
 
 
-# --- Get Best Model and Parameters ---
 best_trial = study.best_trial
 best_params_with_model = best_trial.params
 best_model_name = best_params_with_model['model']
@@ -238,34 +209,29 @@ logger.info(f"Best model: {best_model_name}")
 logger.info(f"Best parameters found: {best_params_with_model}")
 logger.info(f"Best average CV accuracy: {best_value:.4f}")
 
-# --- Build Final Model ---
 logger.info("\n🏗️ Building final model with best parameters...")
-# Create a copy of params, remove 'model' key
 final_params = best_params_with_model.copy()
 final_params.pop('model')
-
+    
 if best_model_name == 'RandomForest':
     final_model = RandomForestClassifier(**final_params, random_state=42, n_jobs=-1)
 elif best_model_name == 'XGBoost':
     final_model = xgb.XGBClassifier(**final_params, random_state=42, n_jobs=-1, use_label_encoder=False, eval_metric='logloss')
 elif best_model_name == 'LightGBM':
     final_model = lgb.LGBMClassifier(**final_params, random_state=42, n_jobs=-1)
-else:  # LogisticRegression
-    # Ensure solver is explicitly set (Optuna might not include it if defaulted in objective)
+else:
     if 'solver' not in final_params:
          penalty = final_params.get('penalty')
          if penalty == 'elasticnet' or penalty == 'l1':
              final_params['solver'] = 'saga'
          elif penalty is None:
-              final_params['solver'] = 'saga' # or lbfgs etc.
-         else: # l2
-              final_params['solver'] = 'saga' # or any l2 compatible
+              final_params['solver'] = 'saga'
+         else:
+              final_params['solver'] = 'saga'
          logger.info(f"Explicitly setting solver to '{final_params['solver']}' for final LogisticRegression model.")
 
-    # Ensure l1_ratio is included if penalty is elasticnet
     if final_params.get('penalty') == 'elasticnet' and 'l1_ratio' not in final_params:
          logger.error("l1_ratio missing from best params for elasticnet Logistic Regression!")
-         # Attempt to retrieve it from trial object (shouldn't be necessary if logic is correct)
          l1_ratio_val = best_trial.params.get('l1_ratio')
          if l1_ratio_val is not None:
               final_params['l1_ratio'] = l1_ratio_val
@@ -296,7 +262,7 @@ for train_idx, test_idx in ts_split_final.split(X):
     logger.info(f"Evaluating fold {fold}/{N_SPLITS_CV}...")
     final_model.fit(X_train, y_train)
     y_pred = final_model.predict(X_test)
-    y_pred_proba = final_model.predict_proba(X_test)[:, 1] # Get probability for class 1
+    y_pred_proba = final_model.predict_proba(X_test)[:, 1]
 
     acc = accuracy_score(y_test, y_pred)
     final_accuracies.append(acc)
@@ -313,12 +279,10 @@ else:
     logger.info("Classification report (overall):")
     print(classification_report(y_true_all, y_pred_all))
 
-    # Confusion matrix
     cm = confusion_matrix(y_true_all, y_pred_all)
     logger.info("Confusion matrix (overall):")
     print(cm)
 
-    # Plot Confusion Matrix
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Pred Sell (0)', 'Pred Buy (1)'], yticklabels=['True Sell (0)', 'True Buy (1)'])
     plt.title('Overall Confusion Matrix')
@@ -327,15 +291,14 @@ else:
     cm_path = os.path.join(MODEL_OUTPUT_PATH, 'confusion_matrix.png')
     plt.savefig(cm_path)
     logger.info(f"Confusion matrix plot saved to {cm_path}")
-    plt.close() # Close plot
+    plt.close()
 
 
 # --- Feature Importance ---
-if hasattr(final_model, 'feature_importances_'): # For tree-based models
+if hasattr(final_model, 'feature_importances_'):
     importances = final_model.feature_importances_
-    feature_names = X.columns # Use columns from X DataFrame
-elif hasattr(final_model, 'coef_'): # For linear models (Logistic Regression)
-    # Use absolute coefficient values as importance measure
+    feature_names = X.columns
+elif hasattr(final_model, 'coef_'):
     importances = np.abs(final_model.coef_[0])
     feature_names = X.columns
 else:
@@ -357,7 +320,7 @@ if importances is not None:
 
     # Plot Feature Importance
     plt.figure(figsize=(10, 8))
-    sns.barplot(x='Importance', y='Feature', data=feature_importance.head(20)) # Plot top 20
+    sns.barplot(x='Importance', y='Feature', data=feature_importance.head(20))
     plt.title('Top 20 Feature Importances')
     plt.tight_layout()
     fi_plot_path = os.path.join(MODEL_OUTPUT_PATH, 'feature_importance.png')
@@ -369,7 +332,7 @@ if importances is not None:
 # --- Train Final Model on All Data ---
 logger.info("\n🔄 Training final model on all available data...")
 try:
-    final_model.fit(X, y) # Use the complete X and y
+    final_model.fit(X, y)
     logger.info("✅ Final model trained successfully on all data.")
 except Exception as e:
     logger.error(f"Error training final model on all data: {e}", exc_info=True)
@@ -386,9 +349,7 @@ try:
         f.write(f"Best Model Found: {best_model_name}\n")
         f.write(f"Best CV Accuracy: {best_value:.4f}\n")
         f.write("\n--- Best Parameters ---\n")
-        # Write parameters nicely formatted
         for key, val in best_params_with_model.items():
-             # Format floats nicely
             if isinstance(val, float):
                  f.write(f"{key}: {val:.6f}\n")
             else:
