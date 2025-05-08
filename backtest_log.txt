@@ -1,82 +1,82 @@
-2025-05-07 16:02:19,700 - INFO - Loading data from: forex_preprocessed/finalfeature.csv
-2025-05-07 16:02:19,730 - INFO - Data loaded with 'Datetime' as index. Shape: (801, 19)
-2025-05-07 16:02:19,730 - INFO - Data loaded successfully. Shape: (801, 19)
-2025-05-07 16:02:19,730 - INFO - Preparing features and targets using price column: 'Close' and future period: 2
-2025-05-07 16:02:19,739 - INFO - Features and targets prepared. X shape: (799, 18), y shape: (799,)
-2025-05-07 16:02:19,739 - INFO - Feature columns: ['Open', 'High', 'Low', 'Volume', 'rsi', 'macd', 'macd_signal', 'bollinger_h', 'bollinger_l', 'atr', 'sma_50', 'sma_200', 'close_lag_1', 'close_lag_2', 'close_lag_3', 'close_lag_4', 'close_lag_5', 'Target']
-2025-05-07 16:02:19,739 - INFO - Starting Hyperparameter Optimization with Optuna...
-[I 2025-05-07 16:02:19,739] A new study created in memory with name: no-name-81c56165-3f28-476b-9ea2-82e77a08615d
-[I 2025-05-07 16:02:21,822] Trial 0 finished with value: 0.6692328249985824 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 213, 'rf_max_depth': 8, 'rf_min_samples_split': 5, 'rf_min_samples_leaf': 9, 'rf_class_weight': 'balanced'}. Best is trial 0 with value: 0.6692328249985824.
-[I 2025-05-07 16:02:22,882] Trial 1 finished with value: 0.671991524189741 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 99, 'rf_max_depth': 15, 'rf_min_samples_split': 3, 'rf_min_samples_leaf': 8, 'rf_class_weight': 'balanced'}. Best is trial 1 with value: 0.671991524189741.
-[I 2025-05-07 16:02:23,634] Trial 2 finished with value: 0.6325900389944042 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 75, 'rf_max_depth': 16, 'rf_min_samples_split': 3, 'rf_min_samples_leaf': 7, 'rf_class_weight': 'balanced'}. Best is trial 1 with value: 0.671991524189741.
-[I 2025-05-07 16:02:23,733] Trial 3 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.15597095548710896, 'lr_penalty': 'l2', 'lr_max_iter': 608, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:24,479] Trial 4 finished with value: 0.6290352826167747 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 68, 'rf_max_depth': 4, 'rf_min_samples_split': 12, 'rf_min_samples_leaf': 3, 'rf_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:24,936] Trial 5 finished with value: 0.5969037489934418 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 199, 'xgb_max_depth': 2, 'xgb_learning_rate': 0.09719148123187787, 'xgb_subsample': 0.9911410386105068, 'xgb_colsample_bytree': 0.9894191456800074, 'xgb_gamma': 0.42493624201762464}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:25,428] Trial 6 finished with value: 0.6722167986083767 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 246, 'lgb_num_leaves': 77, 'lgb_max_depth': 6, 'lgb_learning_rate': 0.018123454377696763, 'lgb_feature_fraction': 0.9839955207057711, 'lgb_bagging_fraction': 0.9903801389074313, 'lgb_bagging_freq': 2, 'lgb_min_child_samples': 24, 'lgb_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:26,342] Trial 7 finished with value: 0.5786146392420863 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 77, 'rf_max_depth': 20, 'rf_min_samples_split': 2, 'rf_min_samples_leaf': 3, 'rf_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:26,530] Trial 8 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 2.169638482242079, 'lr_penalty': 'l1', 'lr_max_iter': 629, 'lr_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:27,846] Trial 9 finished with value: 0.6319758240810865 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 130, 'rf_max_depth': 7, 'rf_min_samples_split': 10, 'rf_min_samples_leaf': 5, 'rf_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:27,955] Trial 10 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.009270433473351616, 'lr_penalty': 'l2', 'lr_max_iter': 1478, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:28,251] Trial 11 finished with value: 0.7270828759825007 and parameters: {'model': 'LogisticRegression', 'lr_C': 3.4057980063637787, 'lr_penalty': 'l1', 'lr_max_iter': 515, 'lr_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:28,365] Trial 12 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 1.0850250265239114, 'lr_penalty': 'l1', 'lr_max_iter': 586, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:28,488] Trial 13 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.17477813984914078, 'lr_penalty': 'l2', 'lr_max_iter': 908, 'lr_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:28,606] Trial 14 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.09344834813233698, 'lr_penalty': 'l2', 'lr_max_iter': 773, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:29,065] Trial 15 finished with value: 0.622624393711604 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 51, 'xgb_max_depth': 10, 'xgb_learning_rate': 0.01031181657918302, 'xgb_subsample': 0.6324937644343755, 'xgb_colsample_bytree': 0.6145478891658158, 'xgb_gamma': 0.00724021425818655}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:29,199] Trial 16 finished with value: 0.6178586722933737 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 54, 'lgb_num_leaves': 12, 'lgb_max_depth': 15, 'lgb_learning_rate': 0.19647133780740744, 'lgb_feature_fraction': 0.6115706673828808, 'lgb_bagging_fraction': 0.6364944280871616, 'lgb_bagging_freq': 7, 'lgb_min_child_samples': 50, 'lgb_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:29,826] Trial 17 finished with value: 0.7088915031398854 and parameters: {'model': 'LogisticRegression', 'lr_C': 9.561822263510788, 'lr_penalty': 'l1', 'lr_max_iter': 1260, 'lr_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:29,934] Trial 18 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.2649347893715676, 'lr_penalty': 'l2', 'lr_max_iter': 764, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:30,050] Trial 19 finished with value: 0.5067723470704395 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.020022712035019537, 'lr_penalty': 'l1', 'lr_max_iter': 684, 'lr_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:31,106] Trial 20 finished with value: 0.5867219336937625 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 299, 'xgb_max_depth': 6, 'xgb_learning_rate': 0.191047766645212, 'xgb_subsample': 0.8610483695979329, 'xgb_colsample_bytree': 0.8031630151748285, 'xgb_gamma': 0.12445076574083225}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:31,220] Trial 21 finished with value: 0.5833335202834432 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.002173251101754962, 'lr_penalty': 'l2', 'lr_max_iter': 1190, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:31,329] Trial 22 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.008623182496928415, 'lr_penalty': 'l2', 'lr_max_iter': 1449, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:31,443] Trial 23 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.02811723193010541, 'lr_penalty': 'l2', 'lr_max_iter': 1023, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:31,704] Trial 24 finished with value: 0.5891714949665081 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 111, 'lgb_num_leaves': 45, 'lgb_max_depth': 3, 'lgb_learning_rate': 0.10820582733831972, 'lgb_feature_fraction': 0.7983409731993037, 'lgb_bagging_fraction': 0.8764786328949196, 'lgb_bagging_freq': 6, 'lgb_min_child_samples': 5, 'lgb_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:31,811] Trial 25 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.7448990065948836, 'lr_penalty': 'l2', 'lr_max_iter': 1438, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:31,919] Trial 26 finished with value: 0.3132907348957377 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.0011475115210540655, 'lr_penalty': 'l1', 'lr_max_iter': 966, 'lr_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:32,089] Trial 27 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.05042812293545288, 'lr_penalty': 'l2', 'lr_max_iter': 635, 'lr_class_weight': None}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:32,252] Trial 28 finished with value: 0.7471429493573855 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.6104304228807201, 'lr_penalty': 'l1', 'lr_max_iter': 822, 'lr_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-[I 2025-05-07 16:02:32,549] Trial 29 finished with value: 0.6640063636582803 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 299, 'lgb_num_leaves': 78, 'lgb_max_depth': 13, 'lgb_learning_rate': 0.012282889230087498, 'lgb_feature_fraction': 0.9783855839867465, 'lgb_bagging_fraction': 0.6166644743820665, 'lgb_bagging_freq': 1, 'lgb_min_child_samples': 49, 'lgb_class_weight': 'balanced'}. Best is trial 3 with value: 0.7471429493573855.
-2025-05-07 16:02:32,550 - INFO - Optuna Best Trial Value (F1-score): 0.7471
-2025-05-07 16:02:32,550 - INFO - Optuna Best Parameters: {'model': 'LogisticRegression', 'lr_C': 0.15597095548710896, 'lr_penalty': 'l2', 'lr_max_iter': 608, 'lr_class_weight': None}
-2025-05-07 16:02:32,550 - INFO - Instantiating best model: LogisticRegression with params: {'C': 0.15597095548710896, 'penalty': 'l2', 'max_iter': 608, 'class_weight': None, 'random_state': 42, 'n_jobs': -1}
-2025-05-07 16:02:32,550 - INFO - Performing Walk-Forward Validation with the best model configuration...
-2025-05-07 16:02:32,550 - INFO - Starting Walk-Forward Validation: initial_window=559, step=10
-Walk-Forward Validation:   0%|          | 0/25 [00:00<?, ?it/s]Walk-Forward Validation:   4%|▍         | 1/25 [00:01<00:35,  1.46s/it]Walk-Forward Validation:   8%|▊         | 2/25 [00:02<00:24,  1.05s/it]Walk-Forward Validation:  12%|█▏        | 3/25 [00:03<00:21,  1.04it/s]Walk-Forward Validation:  16%|█▌        | 4/25 [00:04<00:20,  1.03it/s]Walk-Forward Validation:  20%|██        | 5/25 [00:05<00:19,  1.01it/s]Walk-Forward Validation:  24%|██▍       | 6/25 [00:05<00:17,  1.06it/s]Walk-Forward Validation:  28%|██▊       | 7/25 [00:06<00:17,  1.02it/s]Walk-Forward Validation:  32%|███▏      | 8/25 [00:08<00:17,  1.04s/it]Walk-Forward Validation:  56%|█████▌    | 14/25 [00:08<00:03,  3.43it/s]Walk-Forward Validation:  80%|████████  | 20/25 [00:08<00:00,  6.61it/s]Walk-Forward Validation:  96%|█████████▌| 24/25 [00:08<00:00,  2.85it/s]
-2025-05-07 16:02:41,006 - INFO - Walk-forward validation completed. Metrics: {'accuracy': 0.75, 'precision': 0.7514756517461879, 'recall': 0.75, 'f1': 0.7505291005291005}
-2025-05-07 16:02:41,012 - INFO - Walk-Forward Validation Metrics:
-accuracy     0.750000
-precision    0.751476
-recall       0.750000
-f1           0.750529
+2025-05-07 16:50:50,330 - INFO - Loading data from: forex_preprocessed/finalfeature.csv
+2025-05-07 16:50:50,356 - INFO - Data loaded with 'Datetime' as index. Shape: (801, 19)
+2025-05-07 16:50:50,357 - INFO - Data loaded successfully. Shape: (801, 19)
+2025-05-07 16:50:50,357 - INFO - Preparing features and targets using price column: 'Close' and future period: 1
+2025-05-07 16:50:50,366 - INFO - Features and targets prepared. X shape: (800, 18), y shape: (800,)
+2025-05-07 16:50:50,367 - INFO - Feature columns: ['Open', 'High', 'Low', 'Volume', 'rsi', 'macd', 'macd_signal', 'bollinger_h', 'bollinger_l', 'atr', 'sma_50', 'sma_200', 'close_lag_1', 'close_lag_2', 'close_lag_3', 'close_lag_4', 'close_lag_5', 'Target']
+2025-05-07 16:50:50,367 - INFO - Starting Hyperparameter Optimization with Optuna...
+[I 2025-05-07 16:50:50,367] A new study created in memory with name: no-name-c5d3398f-eced-48fd-81a4-9eed0e2c1aeb
+[I 2025-05-07 16:50:50,473] Trial 0 finished with value: 1.0 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.014050986503846948, 'lr_penalty': 'l2', 'lr_max_iter': 963, 'lr_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:50,831] Trial 1 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 296, 'lgb_num_leaves': 25, 'lgb_max_depth': 15, 'lgb_learning_rate': 0.14565147968916578, 'lgb_feature_fraction': 0.6694740723754056, 'lgb_bagging_fraction': 0.6954785943556798, 'lgb_bagging_freq': 7, 'lgb_min_child_samples': 28, 'lgb_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:50,930] Trial 2 finished with value: 0.86417559049138 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.018636713829040252, 'lr_penalty': 'l1', 'lr_max_iter': 977, 'lr_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:51,241] Trial 3 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 121, 'xgb_max_depth': 10, 'xgb_learning_rate': 0.06099671220190948, 'xgb_subsample': 0.7043544857658275, 'xgb_colsample_bytree': 0.9622795815525489, 'xgb_gamma': 0.21057612596972053}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:51,408] Trial 4 finished with value: 1.0 and parameters: {'model': 'LogisticRegression', 'lr_C': 6.953007012738797, 'lr_penalty': 'l2', 'lr_max_iter': 999, 'lr_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:51,676] Trial 5 finished with value: 1.0 and parameters: {'model': 'LogisticRegression', 'lr_C': 7.061402940909377, 'lr_penalty': 'l1', 'lr_max_iter': 1034, 'lr_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:51,782] Trial 6 finished with value: 1.0 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.001315804662382593, 'lr_penalty': 'l2', 'lr_max_iter': 1401, 'lr_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:54,022] Trial 7 finished with value: 1.0 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 237, 'rf_max_depth': 5, 'rf_min_samples_split': 2, 'rf_min_samples_leaf': 10, 'rf_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:56,300] Trial 8 finished with value: 1.0 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 262, 'rf_max_depth': 13, 'rf_min_samples_split': 5, 'rf_min_samples_leaf': 8, 'rf_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:57,452] Trial 9 finished with value: 1.0 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 121, 'rf_max_depth': 5, 'rf_min_samples_split': 18, 'rf_min_samples_leaf': 4, 'rf_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:57,899] Trial 10 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 291, 'xgb_max_depth': 2, 'xgb_learning_rate': 0.016695846897664495, 'xgb_subsample': 0.9852445409898591, 'xgb_colsample_bytree': 0.6323274965153113, 'xgb_gamma': 0.4978015322459631}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:58,128] Trial 11 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 293, 'lgb_num_leaves': 20, 'lgb_max_depth': 15, 'lgb_learning_rate': 0.18733834602725127, 'lgb_feature_fraction': 0.6497859893929225, 'lgb_bagging_fraction': 0.6745766527582999, 'lgb_bagging_freq': 7, 'lgb_min_child_samples': 25, 'lgb_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:58,315] Trial 12 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 70, 'lgb_num_leaves': 52, 'lgb_max_depth': 11, 'lgb_learning_rate': 0.0890896437589811, 'lgb_feature_fraction': 0.7252579045869966, 'lgb_bagging_fraction': 0.8823403428565798, 'lgb_bagging_freq': 1, 'lgb_min_child_samples': 48, 'lgb_class_weight': None}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:58,797] Trial 13 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 294, 'lgb_num_leaves': 12, 'lgb_max_depth': 4, 'lgb_learning_rate': 0.015962583342199712, 'lgb_feature_fraction': 0.9464728030343549, 'lgb_bagging_fraction': 0.6180335111709094, 'lgb_bagging_freq': 7, 'lgb_min_child_samples': 7, 'lgb_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:59,160] Trial 14 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 188, 'lgb_num_leaves': 36, 'lgb_max_depth': 15, 'lgb_learning_rate': 0.052781092184923696, 'lgb_feature_fraction': 0.6198466137502022, 'lgb_bagging_fraction': 0.7626107490507027, 'lgb_bagging_freq': 4, 'lgb_min_child_samples': 31, 'lgb_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:59,267] Trial 15 finished with value: 1.0 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.06715469482445482, 'lr_penalty': 'l2', 'lr_max_iter': 518, 'lr_class_weight': None}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:59,486] Trial 16 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 199, 'lgb_num_leaves': 78, 'lgb_max_depth': 9, 'lgb_learning_rate': 0.1591631066658008, 'lgb_feature_fraction': 0.8490370896898987, 'lgb_bagging_fraction': 0.9945457004132514, 'lgb_bagging_freq': 5, 'lgb_min_child_samples': 26, 'lgb_class_weight': None}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:59,775] Trial 17 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 67, 'xgb_max_depth': 6, 'xgb_learning_rate': 0.17978643175716139, 'xgb_subsample': 0.6018184113110661, 'xgb_colsample_bytree': 0.7764230430008546, 'xgb_gamma': 0.0316652713901488}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:50:59,956] Trial 18 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 101, 'lgb_num_leaves': 36, 'lgb_max_depth': 10, 'lgb_learning_rate': 0.018432693089954152, 'lgb_feature_fraction': 0.7634614760580227, 'lgb_bagging_fraction': 0.7568402574396957, 'lgb_bagging_freq': 4, 'lgb_min_child_samples': 39, 'lgb_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:00,066] Trial 19 finished with value: 0.495893315588731 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.0016722227844430109, 'lr_penalty': 'l2', 'lr_max_iter': 651, 'lr_class_weight': None}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:00,524] Trial 20 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 228, 'lgb_num_leaves': 55, 'lgb_max_depth': 5, 'lgb_learning_rate': 0.044463196858929854, 'lgb_feature_fraction': 0.8493922495334824, 'lgb_bagging_fraction': 0.8603922161034047, 'lgb_bagging_freq': 1, 'lgb_min_child_samples': 12, 'lgb_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:00,890] Trial 21 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 117, 'xgb_max_depth': 10, 'xgb_learning_rate': 0.06443359520651862, 'xgb_subsample': 0.698754993671094, 'xgb_colsample_bytree': 0.9875230606121288, 'xgb_gamma': 0.2247179815847653}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:01,376] Trial 22 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 194, 'xgb_max_depth': 10, 'xgb_learning_rate': 0.0517397917545028, 'xgb_subsample': 0.8206903474942412, 'xgb_colsample_bytree': 0.9968470437057, 'xgb_gamma': 0.2566169315234634}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:01,820] Trial 23 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 178, 'xgb_max_depth': 7, 'xgb_learning_rate': 0.01672938683715943, 'xgb_subsample': 0.7927599661954082, 'xgb_colsample_bytree': 0.8468400578881486, 'xgb_gamma': 0.22313200547347464}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:02,061] Trial 24 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 113, 'xgb_max_depth': 7, 'xgb_learning_rate': 0.11941947643619819, 'xgb_subsample': 0.7276499157328661, 'xgb_colsample_bytree': 0.8634457904994531, 'xgb_gamma': 0.05788831877216666}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:02,490] Trial 25 finished with value: 1.0 and parameters: {'model': 'XGBoost', 'xgb_n_estimators': 251, 'xgb_max_depth': 4, 'xgb_learning_rate': 0.030476209840151893, 'xgb_subsample': 0.9121729706819026, 'xgb_colsample_bytree': 0.7509625635712325, 'xgb_gamma': 0.36025820555550464}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:02,601] Trial 26 finished with value: 1.0 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.2010220051328855, 'lr_penalty': 'l2', 'lr_max_iter': 1350, 'lr_class_weight': 'balanced'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:03,480] Trial 27 finished with value: 1.0 and parameters: {'model': 'RandomForest', 'rf_n_estimators': 57, 'rf_max_depth': 19, 'rf_min_samples_split': 20, 'rf_min_samples_leaf': 1, 'rf_class_weight': 'balanced_subsample'}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:03,621] Trial 28 finished with value: 0.7490878711931344 and parameters: {'model': 'LogisticRegression', 'lr_C': 0.01153028834146463, 'lr_penalty': 'l1', 'lr_max_iter': 813, 'lr_class_weight': None}. Best is trial 0 with value: 1.0.
+[I 2025-05-07 16:51:03,896] Trial 29 finished with value: 1.0 and parameters: {'model': 'LightGBM', 'lgb_n_estimators': 131, 'lgb_num_leaves': 26, 'lgb_max_depth': 12, 'lgb_learning_rate': 0.08666135313865124, 'lgb_feature_fraction': 0.6904462089167915, 'lgb_bagging_fraction': 0.6832279497543231, 'lgb_bagging_freq': 6, 'lgb_min_child_samples': 18, 'lgb_class_weight': None}. Best is trial 0 with value: 1.0.
+2025-05-07 16:51:03,896 - INFO - Optuna Best Trial Value (F1-score): 1.0000
+2025-05-07 16:51:03,896 - INFO - Optuna Best Parameters: {'model': 'LogisticRegression', 'lr_C': 0.014050986503846948, 'lr_penalty': 'l2', 'lr_max_iter': 963, 'lr_class_weight': 'balanced'}
+2025-05-07 16:51:03,896 - INFO - Instantiating best model: LogisticRegression with params: {'C': 0.014050986503846948, 'penalty': 'l2', 'max_iter': 963, 'class_weight': 'balanced', 'random_state': 42, 'n_jobs': -1}
+2025-05-07 16:51:03,896 - INFO - Performing Walk-Forward Validation with the best model configuration...
+2025-05-07 16:51:03,896 - INFO - Starting Walk-Forward Validation: initial_window=560, step=10
+Walk-Forward Validation:   0%|          | 0/25 [00:00<?, ?it/s]Walk-Forward Validation:   4%|▍         | 1/25 [00:01<00:40,  1.68s/it]Walk-Forward Validation:   8%|▊         | 2/25 [00:02<00:25,  1.09s/it]Walk-Forward Validation:  12%|█▏        | 3/25 [00:03<00:22,  1.03s/it]Walk-Forward Validation:  16%|█▌        | 4/25 [00:04<00:24,  1.19s/it]Walk-Forward Validation:  20%|██        | 5/25 [00:05<00:22,  1.12s/it]Walk-Forward Validation:  24%|██▍       | 6/25 [00:08<00:31,  1.66s/it]Walk-Forward Validation:  28%|██▊       | 7/25 [00:16<01:08,  3.79s/it]Walk-Forward Validation:  32%|███▏      | 8/25 [00:21<01:07,  3.99s/it]Walk-Forward Validation:  60%|██████    | 15/25 [00:21<00:09,  1.03it/s]Walk-Forward Validation:  88%|████████▊ | 22/25 [00:21<00:01,  2.12it/s]Walk-Forward Validation:  96%|█████████▌| 24/25 [00:21<00:00,  1.13it/s]
+2025-05-07 16:51:25,219 - INFO - Walk-forward validation completed. Metrics: {'accuracy': 1.0, 'precision': 1.0, 'recall': 1.0, 'f1': 1.0}
+2025-05-07 16:51:25,230 - INFO - Walk-Forward Validation Metrics:
+accuracy     1.0
+precision    1.0
+recall       1.0
+f1           1.0
 dtype: float64
-2025-05-07 16:02:41,018 - INFO - Production model (last from WF) saved to forex_models/production_model_from_wf.pkl
-2025-05-07 16:02:41,018 - INFO - Performing Rolling Backtest with model type: LogisticRegression and best params...
-2025-05-07 16:02:41,018 - INFO - Starting Rolling Backtest: window_size=500, step=10, min_train_samples=100
-Rolling Backtest:   0%|          | 0/30 [00:00<?, ?it/s]Rolling Backtest:  20%|██        | 6/30 [00:00<00:00, 52.58it/s]Rolling Backtest:  40%|████      | 12/30 [00:00<00:00, 53.61it/s]Rolling Backtest:  60%|██████    | 18/30 [00:00<00:00, 47.61it/s]Rolling Backtest:  77%|███████▋  | 23/30 [00:00<00:00, 42.87it/s]Rolling Backtest:  93%|█████████▎| 28/30 [00:00<00:00, 44.35it/s]Rolling Backtest: 100%|██████████| 30/30 [00:00<00:00, 46.66it/s]
-2025-05-07 16:02:41,686 - INFO - Rolling backtest completed. 299 predictions generated.
-2025-05-07 16:02:41,705 - INFO - Saved backtest results to forex_models/backtest_results_20250507_160241.csv
-2025-05-07 16:02:41,705 - INFO - Analyzing backtest results...
-2025-05-07 16:02:41,715 - INFO - 
+2025-05-07 16:51:25,237 - INFO - Production model (last from WF) saved to forex_models/production_model_from_wf.pkl
+2025-05-07 16:51:25,237 - INFO - Performing Rolling Backtest with model type: LogisticRegression and best params...
+2025-05-07 16:51:25,237 - INFO - Starting Rolling Backtest: window_size=500, step=10, min_train_samples=100
+Rolling Backtest:   0%|          | 0/31 [00:00<?, ?it/s]Rolling Backtest:  19%|█▉        | 6/31 [00:00<00:00, 51.81it/s]Rolling Backtest:  42%|████▏     | 13/31 [00:00<00:00, 57.96it/s]Rolling Backtest:  61%|██████▏   | 19/31 [00:00<00:00, 57.90it/s]Rolling Backtest:  81%|████████  | 25/31 [00:00<00:00, 45.40it/s]Rolling Backtest:  97%|█████████▋| 30/31 [00:00<00:00, 50.54it/s]
+2025-05-07 16:51:25,845 - INFO - Rolling backtest completed. 300 predictions generated.
+2025-05-07 16:51:25,863 - INFO - Saved backtest results to forex_models/backtest_results_20250507_165125.csv
+2025-05-07 16:51:25,863 - INFO - Analyzing backtest results...
+2025-05-07 16:51:25,885 - INFO - 
 --- Strategy Performance Summary ---
-2025-05-07 16:02:41,715 - INFO - Total Trades: 299
-2025-05-07 16:02:41,715 - INFO - Winning Trades: 207
-2025-05-07 16:02:41,715 - INFO - Losing Trades: 66
-2025-05-07 16:02:41,715 - INFO - Win Rate: 69.23%
-2025-05-07 16:02:41,715 - INFO - Total Strategy Return: 328.87%
-2025-05-07 16:02:41,715 - INFO - Profit Factor: 4.47
-2025-05-07 16:02:42,110 - INFO - Equity curve saved to forex_models/equity_curve.png
-2025-05-07 16:02:42,312 - INFO - Rolling accuracy plot saved to forex_models/rolling_accuracy.png
-2025-05-07 16:02:42,312 - INFO - 
+2025-05-07 16:51:25,885 - INFO - Total Trades: 300
+2025-05-07 16:51:25,885 - INFO - Winning Trades: 275
+2025-05-07 16:51:25,885 - INFO - Losing Trades: 0
+2025-05-07 16:51:25,885 - INFO - Win Rate: 91.67%
+2025-05-07 16:51:25,885 - INFO - Total Strategy Return: 361.52%
+2025-05-07 16:51:25,885 - INFO - Profit Factor: inf
+2025-05-07 16:51:26,270 - INFO - Equity curve saved to forex_models/equity_curve.png
+2025-05-07 16:51:26,413 - INFO - Rolling accuracy plot saved to forex_models/rolling_accuracy.png
+2025-05-07 16:51:26,414 - INFO - 
 --- Classification Report (Predicting Target Up/Down) ---
-2025-05-07 16:02:42,321 - INFO - 
+2025-05-07 16:51:26,420 - INFO - 
               precision    recall  f1-score   support
 
-           0       0.78      0.75      0.77       169
-           1       0.69      0.72      0.71       130
+           0       1.00      1.00      1.00       164
+           1       1.00      1.00      1.00       136
 
-    accuracy                           0.74       299
-   macro avg       0.74      0.74      0.74       299
-weighted avg       0.74      0.74      0.74       299
+    accuracy                           1.00       300
+   macro avg       1.00      1.00      1.00       300
+weighted avg       1.00      1.00      1.00       300
 
-2025-05-07 16:02:42,506 - INFO - Confusion matrix saved to forex_models/confusion_matrix.png
-2025-05-07 16:02:42,506 - INFO - Backtesting process completed successfully.
+2025-05-07 16:51:26,569 - INFO - Confusion matrix saved to forex_models/confusion_matrix.png
+2025-05-07 16:51:26,569 - INFO - Backtesting process completed successfully.

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score 
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 import lightgbm as lgb
@@ -12,353 +12,215 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import logging
+import inspect 
 
-PROCESSED_DATA_PATH = 'forex_preprocessed/finalfeature.csv'
+# --- CONFIGURATION ---
+PROCESSED_DATA_PATH = os.path.join('forex_preprocessed', 'finalfeature.csv') # From app_py_v4.py
 MODEL_OUTPUT_PATH = 'forex_models'
-FUTURE_PERIOD = 1 
-N_SPLITS_CV = 5
-N_TRIALS_OPTUNA = 30
+SAVED_MODEL_FILENAME = 'best_trading_model.pkl' 
+SAVED_PARAMS_FILENAME = 'model_parameters.txt'
 
+TARGET_COL_NAME = 'Target' # Must match the target column name from app_py_v4.py
+# CRITICAL: This MUST be consistent with CONFIG_FUTURE_PERIOD in app_py_v4.py
+# Used here for logging, validation, and context.
+CONFIG_FUTURE_PERIOD = 2 
+
+# Optuna Settings
+N_SPLITS_CV_OPTUNA = 5             
+N_TRIALS_OPTUNA = 50 # Can increase for more thorough search, e.g., 50-100
+MIN_SAMPLES_CV_TRAIN_FOLD_OPTUNA = 100 # Min samples for more stable CV folds in Optuna
+
+# Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 os.makedirs(MODEL_OUTPUT_PATH, exist_ok=True)
 logger.info(f"Model output directory: {MODEL_OUTPUT_PATH}")
 
-logger.info(f"Loading data from: {PROCESSED_DATA_PATH}")
+# --- DATA LOADING ---
+logger.info(f"Loading preprocessed data from: {PROCESSED_DATA_PATH}")
 if not os.path.exists(PROCESSED_DATA_PATH):
-    logger.error(f"Data file not found: {PROCESSED_DATA_PATH}")
-    raise FileNotFoundError(f"Data file not found: {PROCESSED_DATA_PATH}")
-
+    logger.error(f"FATAL: Processed data file not found: {PROCESSED_DATA_PATH}. Run app_py_v4.py first.")
+    raise FileNotFoundError(f"Processed data file not found: {PROCESSED_DATA_PATH}")
 try:
-    data_preview = pd.read_csv(PROCESSED_DATA_PATH, nrows=5)
-    logger.info(f"Data columns: {data_preview.columns.tolist()}")
-
-    date_col = None
-    if 'Datetime' in data_preview.columns:
-        date_col = 'Datetime'
-    elif 'Date' in data_preview.columns:
-        date_col = 'Date'
-    elif any('date' in col.lower() for col in data_preview.columns):
-        date_col = next((col for col in data_preview.columns if 'date' in col.lower()), None)
-
-    if date_col:
-        logger.info(f"Using date column: {date_col}")
-        data = pd.read_csv(PROCESSED_DATA_PATH, parse_dates=[date_col])
-    else:
-        logger.warning("No date column identified. Loading without parsing dates.")
-        data = pd.read_csv(PROCESSED_DATA_PATH)
-
-    logger.info(f"Data loaded successfully with shape: {data.shape}")
-
+    data = pd.read_csv(PROCESSED_DATA_PATH)
+    logger.info(f"Data loaded successfully. Shape: {data.shape}")
 except Exception as e:
-    logger.error(f"Error loading or processing data: {e}")
-    raise
-
+    logger.error(f"Error loading data: {e}", exc_info=True); raise
 if data.empty:
-    logger.error("The loaded dataframe is empty.")
-    raise ValueError("The loaded dataframe is empty. Please check your data file.")
+    logger.error("Loaded dataframe is empty."); raise ValueError("Loaded dataframe is empty.")
 
-price_cols = [col for col in ['Close', 'close', 'Price', 'price'] if col in data.columns]
-if not price_cols:
-    logger.error("No price column found (looking for 'Close', 'close', 'Price', or 'price')")
-    raise ValueError("No price column found in the data.")
-price_col = price_cols[0]
-logger.info(f"Using price column: {price_col}")
+# --- FEATURE AND TARGET PREPARATION ---
+if TARGET_COL_NAME not in data.columns:
+    logger.error(f"FATAL: Target column '{TARGET_COL_NAME}' not found in data."); raise ValueError(f"Target column '{TARGET_COL_NAME}' not found.")
+y = data[TARGET_COL_NAME].copy()
 
-data['target'] = (data[price_col].shift(-FUTURE_PERIOD) > data[price_col]).astype(int)
-logger.info(f"Target distribution:\n{data['target'].value_counts(normalize=True)}")
+# Define feature columns: Exclude target and any explicit non-feature columns
+# 'Datetime' should have been reset to a regular column by app_py_v4.py
+exclude_cols_for_features = [TARGET_COL_NAME]
+# Add other known non-feature columns if they exist (e.g., 'Date', 'Time' if not used as Datetime index)
+for col_to_check in ['Datetime', 'Date', 'Time', 'Datetime_str']: # Add any other specific ID or helper columns
+    if col_to_check in data.columns:
+        exclude_cols_for_features.append(col_to_check)
+exclude_cols_for_features = list(set(exclude_cols_for_features)) # Unique
 
-initial_rows = len(data)
-data.dropna(subset=['target'], inplace=True)
-rows_after_target_dropna = len(data)
-logger.info(f"Dropped {initial_rows - rows_after_target_dropna} rows with NaN target.")
+feature_names = [col for col in data.columns if col not in exclude_cols_for_features]
+if not feature_names:
+    logger.error("FATAL: No feature columns identified after exclusions."); raise ValueError("No feature columns.")
+X = data[feature_names].copy()
 
-exclude_columns = [date_col] if date_col else []
-exclude_columns.extend(['target', price_col])
-exclude_columns.extend([col for col in data.columns if col.lower() in ['datetime', 'date', 'time']])
-exclude_columns = list(set(col for col in exclude_columns if col in data.columns))
+logger.info(f"Target column: '{TARGET_COL_NAME}' (derived using FUTURE_PERIOD={CONFIG_FUTURE_PERIOD} in app_py_v4.py)")
+logger.info(f"Number of features: {len(feature_names)}. Features (first 5): {feature_names[:5]}...")
+logger.info(f"Shape of X: {X.shape}, Shape of y: {y.shape}. Target distribution:\n{y.value_counts(normalize=True)}")
 
-features = [col for col in data.columns if col not in exclude_columns]
-target = 'target'
-
-logger.info(f"Selected {len(features)} features: {features}")
-
-X = data[features].copy()
-y = data[target].copy()
-
+# Sanity checks for NaNs (should be handled by app_py_v4.py)
 if X.isnull().values.any():
-    nan_counts = X.isnull().sum()
-    logger.warning(f"Features contain NaN values:\n{nan_counts[nan_counts > 0]}")
-    X = X.fillna(0)
-    logger.info("Filled NaN values in features with 0.")
-else:
-     logger.info("No NaN values found in selected features.")
+    logger.warning(f"Features X contain NaN values! Filling with 0. Review app_py_v4.py."); X = X.fillna(0)
+if y.isnull().values.any():
+    logger.error(f"FATAL: Target y contains NaN values!"); raise ValueError("Target y contains NaN values.")
 
-
-# Optuna objective function
+# --- OPTUNA HYPERPARAMETER OPTIMIZATION ---
 def objective(trial):
     model_name = trial.suggest_categorical('model', ['RandomForest', 'XGBoost', 'LightGBM', 'LogisticRegression'])
-
     model = None
-
-    try:
+    try: # Define hyperparameter search spaces
         if model_name == "RandomForest":
-            params = {
-                'n_estimators': trial.suggest_int('n_estimators', 50, 300, step=10),
-                'max_depth': trial.suggest_int('max_depth', 3, 20),
-                'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),
-                'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 15),
-                'class_weight': trial.suggest_categorical('class_weight', ['balanced', None])
-            }
-            model = RandomForestClassifier(**params, random_state=42, n_jobs=-1)
-
+            params = {'n_estimators': trial.suggest_int('rf_n_estimators', 50, 500, step=25),
+                      'max_depth': trial.suggest_int('rf_max_depth', 3, 30),
+                      'min_samples_split': trial.suggest_int('rf_min_samples_split', 2, 50),
+                      'min_samples_leaf': trial.suggest_int('rf_min_samples_leaf', 1, 30),
+                      'class_weight': trial.suggest_categorical('rf_class_weight', ['balanced', 'balanced_subsample', None]),
+                      'max_features': trial.suggest_categorical('rf_max_features', ['sqrt', 'log2', 0.5, 0.7, None]), # Added fractional options
+                      'random_state': 42, 'n_jobs': -1}
+            model = RandomForestClassifier(**params)
         elif model_name == "XGBoost":
-            params = {
-                'n_estimators': trial.suggest_int('n_estimators', 50, 300, step=10),
-                'max_depth': trial.suggest_int('max_depth', 3, 15),
-                'learning_rate': trial.suggest_float('learning_rate', 0.005, 0.3, log=True),
-                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
-                'gamma': trial.suggest_float('gamma', 0, 0.5),
-                'reg_alpha': trial.suggest_float('reg_alpha', 0, 1),
-                'reg_lambda': trial.suggest_float('reg_lambda', 0, 1),
-            }
-            model = xgb.XGBClassifier(**params, random_state=42, n_jobs=-1, use_label_encoder=False, eval_metric='logloss')
-
+            params = {'n_estimators': trial.suggest_int('xgb_n_estimators', 50, 500, step=25),
+                      'max_depth': trial.suggest_int('xgb_max_depth', 2, 15),
+                      'learning_rate': trial.suggest_float('xgb_learning_rate', 0.001, 0.3, log=True),
+                      'subsample': trial.suggest_float('xgb_subsample', 0.4, 1.0),
+                      'colsample_bytree': trial.suggest_float('xgb_colsample_bytree', 0.4, 1.0),
+                      'gamma': trial.suggest_float('xgb_gamma', 0, 2.0), 
+                      'reg_alpha': trial.suggest_float('xgb_reg_alpha', 1e-8, 10.0, log=True), 
+                      'reg_lambda': trial.suggest_float('xgb_reg_lambda', 1e-8, 10.0, log=True),
+                      'random_state': 42, 'n_jobs': -1, 'use_label_encoder': False, 'eval_metric': 'logloss'}
+            model = xgb.XGBClassifier(**params)
         elif model_name == "LightGBM":
-            params = {
-                'n_estimators': trial.suggest_int('n_estimators', 50, 300, step=10),
-                'max_depth': trial.suggest_int('max_depth', 3, 15),
-                'learning_rate': trial.suggest_float('learning_rate', 0.005, 0.3, log=True),
-                'num_leaves': trial.suggest_int('num_leaves', 10, 150),
-                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
-                'reg_alpha': trial.suggest_float('reg_alpha', 0, 1),
-                'reg_lambda': trial.suggest_float('reg_lambda', 0, 1),
-                'class_weight': trial.suggest_categorical('class_weight', ['balanced', None])
-            }
-            model = lgb.LGBMClassifier(**params, random_state=42, n_jobs=-1)
+            params = {'n_estimators': trial.suggest_int('lgb_n_estimators', 50, 500, step=25),
+                      'max_depth': trial.suggest_int('lgb_max_depth', 3, 20), 
+                      'learning_rate': trial.suggest_float('lgb_learning_rate', 0.001, 0.3, log=True),
+                      'num_leaves': trial.suggest_int('lgb_num_leaves', 10, 200), # Wider range
+                      'subsample': trial.suggest_float('lgb_subsample', 0.4, 1.0), 
+                      'colsample_bytree': trial.suggest_float('lgb_colsample_bytree', 0.4, 1.0),
+                      'reg_alpha': trial.suggest_float('lgb_reg_alpha', 1e-8, 10.0, log=True),
+                      'reg_lambda': trial.suggest_float('lgb_reg_lambda', 1e-8, 10.0, log=True),
+                      'min_child_samples': trial.suggest_int('lgb_min_child_samples', 5, 150),
+                      'class_weight': trial.suggest_categorical('lgb_class_weight', ['balanced', None]),
+                      'random_state': 42, 'n_jobs': -1, 'verbose': -1}
+            model = lgb.LGBMClassifier(**params)
+        else: # LogisticRegression
+            params = {'C': trial.suggest_float('lr_C', 1e-5, 1000.0, log=True), 
+                      'penalty': trial.suggest_categorical('lr_penalty', ['l1', 'l2']), 
+                      'solver': 'saga', 
+                      'max_iter': trial.suggest_int('lr_max_iter', 500, 5000), 
+                      'class_weight': trial.suggest_categorical('lr_class_weight', ['balanced', None]),
+                      'random_state': 42, 'n_jobs': -1}
+            model = LogisticRegression(**params)
 
-        else:
-            params = {}
-            penalty = trial.suggest_categorical('penalty', ['l1', 'l2', 'elasticnet', None])
-            params['penalty'] = penalty
-            params['C'] = trial.suggest_float('C', 0.001, 100.0, log=True)
-            params['class_weight'] = trial.suggest_categorical('class_weight', ['balanced', None])
-
-            if penalty == 'elasticnet':
-                params['solver'] = 'saga'
-                params['l1_ratio'] = trial.suggest_float('l1_ratio', 0.0, 1.0)
-            elif penalty == 'l1':
-                params['solver'] = 'saga'
-            elif penalty == 'l2':
-                 params['solver'] = 'saga'
-            else:
-                params['solver'] = 'saga'
-            model = LogisticRegression(**params, random_state=42, max_iter=1500, n_jobs=-1)
-        accuracies = []
-        ts_split = TimeSeriesSplit(n_splits=N_SPLITS_CV)
-
-        for train_idx, val_idx in ts_split.split(X):
+        f1_scores_cv = []
+        ts_split = TimeSeriesSplit(n_splits=N_SPLITS_CV_OPTUNA)
+        for fold_idx, (train_idx, val_idx) in enumerate(ts_split.split(X)):
             X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
             y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
-
-            if X_train.empty or y_train.empty:
-                 logger.warning(f"Skipping fold due to empty train data in trial {trial.number}")
-                 continue
-
+            if len(X_train) < MIN_SAMPLES_CV_TRAIN_FOLD_OPTUNA or X_val.empty: continue
             model.fit(X_train, y_train)
             preds = model.predict(X_val)
-            acc = accuracy_score(y_val, preds)
-            accuracies.append(acc)
-        if not accuracies:
-            logger.warning(f"Trial {trial.number} resulted in no valid accuracy scores.")
-            return 0.0
-
-        mean_accuracy = np.mean(accuracies)
-        return mean_accuracy
-
+            score = f1_score(y_val, preds, average='weighted', zero_division=0)
+            f1_scores_cv.append(score)
+        
+        if not f1_scores_cv: return 0.0 # Optuna maximizes, so 0 is poor
+        mean_f1 = np.mean(f1_scores_cv)
+        logger.debug(f"Trial {trial.number} ({model_name}): Mean F1 (weighted) = {mean_f1:.4f}")
+        return mean_f1
     except Exception as e:
-        logger.error(f"Error in Trial {trial.number} ({model_name}) with params {trial.params}: {e}", exc_info=False) # Log error without full traceback noise
-        return 0.0
+        logger.error(f"Optuna Trial {trial.number} ({model_name}) failed: {e}", exc_info=False)
+        return float('-inf') # Return very low for failed trials
 
-
-# --- Run Optuna Study ---
 logger.info(f"🔍 Starting hyperparameter optimization with Optuna ({N_TRIALS_OPTUNA} trials)...")
-study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner())
-
+study = optuna.create_study(direction='maximize', pruner=optuna.pruners.MedianPruner(n_warmup_steps=5, n_min_trials=10))
 try:
-    study.optimize(objective, n_trials=N_TRIALS_OPTUNA, timeout=600)
-except Exception as e:
-    logger.error(f"Optimization study failed: {e}", exc_info=True)
-    raise
-
-if not study.trials:
-     logger.error("Optuna study finished without any successful trials.")
-     raise RuntimeError("Optuna study failed to complete any trials.")
-
+    study.optimize(objective, n_trials=N_TRIALS_OPTUNA, timeout=7200) # e.g., 2-hour timeout
+except Exception as e: logger.error(f"Optuna study failed: {e}", exc_info=True); raise
+if not study.trials or not any(t.state == optuna.trial.TrialState.COMPLETE for t in study.trials):
+     raise RuntimeError("Optuna study failed to complete any trials successfully.")
 
 best_trial = study.best_trial
-best_params_with_model = best_trial.params
-best_model_name = best_params_with_model['model']
-best_value = best_trial.value
+best_params_optuna = best_trial.params 
+best_model_name = best_params_optuna['model']
+best_f1_score_optuna = best_trial.value
 
-logger.info(f"\n--- Optimization Results ---")
-logger.info(f"Best model: {best_model_name}")
-logger.info(f"Best parameters found: {best_params_with_model}")
-logger.info(f"Best average CV accuracy: {best_value:.4f}")
+logger.info(f"\n--- Optuna Optimization Results ---")
+logger.info(f"Best model: {best_model_name}, Best F1 (weighted CV): {best_f1_score_optuna:.4f}")
+logger.info(f"Best parameters: {best_params_optuna}")
 
+# --- FINAL MODEL PREPARATION AND TRAINING ---
 logger.info("\n🏗️ Building final model with best parameters...")
-final_params = best_params_with_model.copy()
-final_params.pop('model')
-    
-if best_model_name == 'RandomForest':
-    final_model = RandomForestClassifier(**final_params, random_state=42, n_jobs=-1)
-elif best_model_name == 'XGBoost':
-    final_model = xgb.XGBClassifier(**final_params, random_state=42, n_jobs=-1, use_label_encoder=False, eval_metric='logloss')
-elif best_model_name == 'LightGBM':
-    final_model = lgb.LGBMClassifier(**final_params, random_state=42, n_jobs=-1)
-else:
-    if 'solver' not in final_params:
-         penalty = final_params.get('penalty')
-         if penalty == 'elasticnet' or penalty == 'l1':
-             final_params['solver'] = 'saga'
-         elif penalty is None:
-              final_params['solver'] = 'saga'
-         else:
-              final_params['solver'] = 'saga'
-         logger.info(f"Explicitly setting solver to '{final_params['solver']}' for final LogisticRegression model.")
+final_model_hyperparams = best_params_optuna.copy()
+final_model_hyperparams.pop('model') 
+common_fixed = {'random_state': 42, 'n_jobs': -1} # Common params for all models
+if best_model_name == 'XGBoost': common_fixed.update({'use_label_encoder': False, 'eval_metric': 'logloss'})
+elif best_model_name == 'LightGBM': common_fixed.update({'verbose': -1})
+elif best_model_name == 'LogisticRegression':
+    if 'solver' not in final_model_hyperparams: final_model_hyperparams['solver'] = 'saga'
+    if 'max_iter' not in final_model_hyperparams : final_model_hyperparams['max_iter'] = 3000 # Default
 
-    if final_params.get('penalty') == 'elasticnet' and 'l1_ratio' not in final_params:
-         logger.error("l1_ratio missing from best params for elasticnet Logistic Regression!")
-         l1_ratio_val = best_trial.params.get('l1_ratio')
-         if l1_ratio_val is not None:
-              final_params['l1_ratio'] = l1_ratio_val
-         else:
-              raise ValueError("Cannot build final ElasticNet model without l1_ratio in best params.")
+final_constructor_params = {**final_model_hyperparams, **common_fixed}
+model_map = {'RandomForest': RandomForestClassifier, 'XGBoost': xgb.XGBClassifier,
+             'LightGBM': lgb.LGBMClassifier, 'LogisticRegression': LogisticRegression}
+ModelClass = model_map[best_model_name]
+sig = inspect.signature(ModelClass.__init__) # Get valid constructor args
+valid_params = {k: v for k, v in final_constructor_params.items() if k in sig.parameters}
+logger.info(f"Final constructor parameters for {best_model_name}: {valid_params}")
+final_model = ModelClass(**valid_params)
 
-
-    final_model = LogisticRegression(**final_params, random_state=42, max_iter=1500, n_jobs=-1)
-
-
-# --- Final Evaluation ---
-logger.info("\n📊 Evaluating final model with time series validation...")
-final_accuracies = []
-y_true_all = []
-y_pred_all = []
-
-ts_split_final = TimeSeriesSplit(n_splits=N_SPLITS_CV)
-fold = 1
-for train_idx, test_idx in ts_split_final.split(X):
-    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-
-    if X_train.empty or y_train.empty or X_test.empty:
-        logger.warning(f"Skipping final evaluation fold {fold} due to empty data.")
-        fold += 1
-        continue
-
-    logger.info(f"Evaluating fold {fold}/{N_SPLITS_CV}...")
-    final_model.fit(X_train, y_train)
-    y_pred = final_model.predict(X_test)
-    y_pred_proba = final_model.predict_proba(X_test)[:, 1]
-
-    acc = accuracy_score(y_test, y_pred)
-    final_accuracies.append(acc)
-    logger.info(f"Fold {fold} Accuracy: {acc:.4f}")
-
-    y_true_all.extend(y_test.tolist())
-    y_pred_all.extend(y_pred.tolist())
-    fold += 1
-
-if not final_accuracies:
-     logger.error("Final evaluation could not be performed (no valid folds).")
-else:
-    logger.info(f"\nAverage accuracy across final time series folds: {np.mean(final_accuracies):.4f}")
-    logger.info("Classification report (overall):")
-    print(classification_report(y_true_all, y_pred_all))
-
-    cm = confusion_matrix(y_true_all, y_pred_all)
-    logger.info("Confusion matrix (overall):")
-    print(cm)
-
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Pred Sell (0)', 'Pred Buy (1)'], yticklabels=['True Sell (0)', 'True Buy (1)'])
-    plt.title('Overall Confusion Matrix')
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    cm_path = os.path.join(MODEL_OUTPUT_PATH, 'confusion_matrix.png')
-    plt.savefig(cm_path)
-    logger.info(f"Confusion matrix plot saved to {cm_path}")
-    plt.close()
-
-
-# --- Feature Importance ---
-if hasattr(final_model, 'feature_importances_'):
-    importances = final_model.feature_importances_
-    feature_names = X.columns
-elif hasattr(final_model, 'coef_'):
-    importances = np.abs(final_model.coef_[0])
-    feature_names = X.columns
-else:
-    importances = None
-
-if importances is not None:
-    feature_importance = pd.DataFrame({
-        'Feature': feature_names,
-        'Importance': importances
-    }).sort_values(by='Importance', ascending=False)
-
-    logger.info("\nTop 15 features by importance:")
-    print(feature_importance.head(15))
-
-    # Save feature importance
-    fi_path = os.path.join(MODEL_OUTPUT_PATH, 'feature_importance.csv')
-    feature_importance.to_csv(fi_path, index=False)
-    logger.info(f"✅ Feature importance saved to {fi_path}")
-
-    # Plot Feature Importance
-    plt.figure(figsize=(10, 8))
-    sns.barplot(x='Importance', y='Feature', data=feature_importance.head(20))
-    plt.title('Top 20 Feature Importances')
-    plt.tight_layout()
-    fi_plot_path = os.path.join(MODEL_OUTPUT_PATH, 'feature_importance.png')
-    plt.savefig(fi_plot_path)
-    logger.info(f"Feature importance plot saved to {fi_plot_path}")
-    plt.close()
-
-
-# --- Train Final Model on All Data ---
-logger.info("\n🔄 Training final model on all available data...")
+logger.info("\n🔄 Training final model on ALL available data (X, y)...")
 try:
     final_model.fit(X, y)
-    logger.info("✅ Final model trained successfully on all data.")
-except Exception as e:
-    logger.error(f"Error training final model on all data: {e}", exc_info=True)
-    raise
+    logger.info("✅ Final model trained successfully.")
+except Exception as e: logger.error(f"Error training final model: {e}", exc_info=True); raise
 
-# --- Save Final Model and Parameters ---
-model_path = os.path.join(MODEL_OUTPUT_PATH, 'best_trading_model.pkl')
-joblib.dump(final_model, model_path)
-logger.info(f"✅ Final model saved as '{model_path}'")
+# --- FEATURE IMPORTANCE (if applicable) ---
+importances = None
+if hasattr(final_model, 'feature_importances_'): importances = final_model.feature_importances_
+elif hasattr(final_model, 'coef_'): importances = np.abs(final_model.coef_[0]) if final_model.coef_.ndim > 1 else np.abs(final_model.coef_)
 
-params_path = os.path.join(MODEL_OUTPUT_PATH, 'model_parameters.txt')
+if importances is not None and len(feature_names) == len(importances):
+    fi_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances}).sort_values(by='Importance', ascending=False)
+    logger.info("\nTop 15 Features (from final model):"); print(fi_df.head(15))
+    fi_df.to_csv(os.path.join(MODEL_OUTPUT_PATH, 'feature_importance.csv'), index=False)
+    plt.figure(figsize=(10, max(6, len(fi_df.head(20)) * 0.35))) # Dynamic height
+    sns.barplot(x='Importance', y='Feature', data=fi_df.head(20), palette="viridis_r")
+    plt.title('Top 20 Feature Importances'); plt.tight_layout()
+    plt.savefig(os.path.join(MODEL_OUTPUT_PATH, 'feature_importance_plot.png')); plt.close()
+else: logger.warning("Could not extract or align feature importances.")
+
+# --- SAVE MODEL AND PARAMETERS ---
+model_save_path = os.path.join(MODEL_OUTPUT_PATH, SAVED_MODEL_FILENAME)
+joblib.dump(final_model, model_save_path)
+logger.info(f"✅ Final model saved to: '{model_save_path}'")
+
+params_save_path = os.path.join(MODEL_OUTPUT_PATH, SAVED_PARAMS_FILENAME)
 try:
-    with open(params_path, 'w') as f:
-        f.write(f"Best Model Found: {best_model_name}\n")
-        f.write(f"Best CV Accuracy: {best_value:.4f}\n")
-        f.write("\n--- Best Parameters ---\n")
-        for key, val in best_params_with_model.items():
-            if isinstance(val, float):
-                 f.write(f"{key}: {val:.6f}\n")
-            else:
-                 f.write(f"{key}: {val}\n")
-        f.write("\n--- Features Used ---\n")
-        f.write("\n".join(features))
-    logger.info(f"✅ Model parameters saved to {params_path}")
-except Exception as e:
-     logger.error(f"Error saving model parameters: {e}")
+    with open(params_save_path, 'w') as f:
+        f.write(f"Best Model Type (Optuna): {best_model_name}\n")
+        f.write(f"Best Optuna CV F1 Score (weighted): {best_f1_score_optuna:.4f}\n")
+        f.write(f"Target Definition FUTURE_PERIOD: {CONFIG_FUTURE_PERIOD}\n")
+        f.write("\n--- Optuna Best Hyperparameters (includes 'model' key) ---\n")
+        for k, v in best_params_optuna.items(): f.write(f"{k}: {v}\n")
+        f.write("\n--- Final Model Constructor Parameters (used for saving) ---\n")
+        for k, v in valid_params.items(): f.write(f"{k}: {v}\n")
+        f.write("\n--- Features Used in Training ---\n" + "\n".join(feature_names))
+    logger.info(f"✅ Model parameters and info saved to: {params_save_path}")
+except Exception as e: logger.error(f"Error saving parameters: {e}")
 
-
-logger.info("\n🏁 ML pipeline completed successfully!")
+logger.info("\n🏁 ML pipeline completed!")
+logger.info(f"Next step: Use '{model_save_path}' in 'backtesting_script_v4.py'.")
