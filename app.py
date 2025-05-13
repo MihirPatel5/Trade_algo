@@ -6,6 +6,7 @@ import os
 import ta
 from sklearn.preprocessing import MinMaxScaler
 import logging
+import MetaTrader5 as mt5
 import joblib # For saving the scaler
 
 # ======= CONFIGURATION =======
@@ -27,6 +28,59 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # ======= DATA FETCHING FUNCTIONS =======
+
+def initialize_mt5():
+    """Initialize connection to MetaTrader 5 terminal."""
+    if not mt5.initialize():
+        logger.error("❌ Failed to initialize MT5")
+        mt5.shutdown()
+        return False
+    return True
+
+def fetch_mt5_data(symbol="EURUSD", timeframe=mt5.TIMEFRAME_H1, num_bars=1000):
+    """Fetch historical data directly from MetaTrader 5."""
+    logger.info(f"Fetching {symbol} data from MetaTrader 5...")
+    
+    if not initialize_mt5():
+        return pd.DataFrame()
+    
+    try:
+        # Get historical data from MT5
+        rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, num_bars)
+        
+        if rates is None:
+            logger.error(f"❌ Failed to get rates from MT5. Error: {mt5.last_error()}")
+            return pd.DataFrame()
+            
+        # Create DataFrame
+        df = pd.DataFrame(rates)
+        df['time'] = pd.to_datetime(df['time'], unit='s')
+        df.rename(columns={
+            'time': 'Datetime',
+            'open': 'Open',
+            'high': 'High',
+            'low': 'Low',
+            'close': 'Close',
+            'tick_volume': 'Volume'
+        }, inplace=True)
+        
+        # Select and reorder columns
+        df = df[['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        
+        # Save to file
+        filename = os.path.join(RAW_OUTPUT_FOLDER, f'mt5_{symbol}_{timeframe}.csv')
+        df.to_csv(filename, index=False)
+        logger.info(f"✅ MT5 data saved: {filename} (Shape: {df.shape})")
+        
+        return df
+        
+    except Exception as e:
+        logger.error(f"❌ Error fetching MT5 data: {e}", exc_info=True)
+        return pd.DataFrame()
+    finally:
+        mt5.shutdown()
+
+
 def fetch_yahoo_forex(pair_symbol='EURUSD=X', interval='1h', period='3y'): # Default to 1h, 3 years
     """Fetches historical forex data from Yahoo Finance."""
     logger.info(f"Fetching Yahoo Finance data for {pair_symbol} (Interval: {interval}, Period: {period})...")
@@ -310,8 +364,8 @@ def preprocess_forex_data(input_file_path, future_period_for_target, target_col_
 if __name__ == "__main__":
     # --- Step 1: Choose and Load/Fetch Raw Data ---
     # Default to Yahoo Finance data
-    raw_data_df = fetch_yahoo_forex(pair_symbol='EURUSD=X', interval='1h', period='3y')
-    source_file_path_for_processing = os.path.join(RAW_OUTPUT_FOLDER, 'yahoo_EURUSD_1h.csv')
+    raw_data_df = fetch_mt5_data(symbol="EURUSD", timeframe=mt5.TIMEFRAME_H1, num_bars=5000)
+    source_file_path_for_processing = os.path.join(RAW_OUTPUT_FOLDER, 'mt5_EURUSD_16385.csv')  # 16385 is the code for H1 timeframe
 
     # --- OR ---
     # Example: Use data from a MetaTrader CSV export
