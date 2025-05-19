@@ -1,0 +1,29 @@
+2025-05-19 13:04:20,677 - INFO - Starting Forex Trading System with action: full
+2025-05-19 13:04:20,677 - INFO - Directory ensured: forex_data
+2025-05-19 13:04:20,677 - INFO - Directory ensured: forex_preprocessed
+2025-05-19 13:04:20,677 - INFO - Directory ensured: forex_models
+2025-05-19 13:04:20,677 - INFO - Directory ensured: forex_backtest_results
+2025-05-19 13:04:20,677 - INFO - === Starting Full Trading Pipeline ===
+2025-05-19 13:04:20,678 - INFO - Directory ensured: forex_data
+2025-05-19 13:04:20,678 - INFO - Directory ensured: forex_preprocessed
+2025-05-19 13:04:20,678 - INFO - Directory ensured: forex_models
+2025-05-19 13:04:20,678 - INFO - Directory ensured: forex_backtest_results
+2025-05-19 13:04:20,678 - INFO - === Starting Data Collection ===
+2025-05-19 13:04:20,678 - INFO - Collecting data for EURUSD (5m, period: 60d)
+2025-05-19 13:04:23,968 - ERROR - 
+1 Failed download:
+2025-05-19 13:04:23,968 - ERROR - ['EURUSD=X']: YFRateLimitError('Too Many Requests. Rate limited. Try after a while.')
+2025-05-19 13:04:23,994 - ERROR - Failed to collect data for EURUSD
+2025-05-19 13:04:23,994 - INFO - Collecting data for GBPUSD (5m, period: 60d)
+2025-05-19 13:04:26,186 - ERROR - 
+1 Failed download:
+2025-05-19 13:04:26,186 - ERROR - ['GBPUSD=X']: YFRateLimitError('Too Many Requests. Rate limited. Try after a while.')
+2025-05-19 13:04:26,188 - ERROR - Failed to collect data for GBPUSD
+2025-05-19 13:04:26,188 - INFO - Collecting data for USDJPY (5m, period: 60d)
+2025-05-19 13:04:27,913 - ERROR - 
+1 Failed download:
+2025-05-19 13:04:27,914 - ERROR - ['USDJPY=X']: YFRateLimitError('Too Many Requests. Rate limited. Try after a while.')
+2025-05-19 13:04:27,916 - ERROR - Failed to collect data for USDJPY
+2025-05-19 13:04:27,916 - WARNING - Data collection completed with some errors
+2025-05-19 13:04:27,916 - INFO - === Data Collection Finished ===
+2025-05-19 13:04:27,916 - ERROR - Data collection failed, aborting pipeline
